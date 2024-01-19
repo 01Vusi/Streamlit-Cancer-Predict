@@ -15,7 +15,7 @@ st.set_page_config(
 
 
 def get_clean_data():
-    data=pd.read_csv("data/data.csv")   
+    data=pd.read_csv("Data/data.csv")   
     data = data.drop(['Unnamed: 32', 'id'], axis=1) 
     data['diagnosis']=data['diagnosis'].map({'M':1,'B':0})
     return data 
@@ -90,7 +90,13 @@ def get_scaled_values(input_dict):
         
     
     
-def get_radar_chart(input_data):
+def get_radar_chart(input_data,scaler):
+  
+  
+  
+    input_df = pd.DataFrame([input_data])
+    scaled_input = scaler.transform(input_df)
+    scaled_input_dict = dict(zip(input_df.columns, scaled_input[0]))
     input_data = get_scaled_values(input_data) 
   
     categories = ['Radius', 'Texture', 'Perimeter', 'Area', 
@@ -144,7 +150,14 @@ def get_radar_chart(input_data):
   
     return fig
     
-def add_predictions(input_data):
+def add_predictions(input_data,model,scaler):
+    input_array = np.array(list(input_data.values())).reshape(1, -1)
+    input_array_scaled = scaler.transform(input_array)
+
+    # Make predictions using the scaled data
+    prediction = model.predict(input_array_scaled)
+  
+  
     model= load(open("App/model.joblib", "rb"))
     scaler = load(open("App/scaler.joblib","rb"))
     
@@ -167,6 +180,9 @@ def add_predictions(input_data):
     
 def main():
   
+  model = load(open("App/model.joblib", "rb"))
+  scaler = load(open("App/scaler.joblib", "rb"))
+  
   with open("Assets/style.css") as f:
     st.markdown("<style>{}</style>".format(f.read()), unsafe_allow_html=True)
 
@@ -176,11 +192,11 @@ def main():
         st.write("Please connect this app to your cytology lab to help diagnose breast cancer from your tissue sample. This app predicts using mechine learning model weather a breast mass is benign or malignant based on the measurements it recieves from  your cytosis lab. You can also update the measurements by hand using the sliders in the sidebar") 
     col1,col2 = st.columns([4,1 ])
     with col1:
-        radar_chart = get_radar_chart(input_data)
+        radar_chart = get_radar_chart(input_data,scaler)
         st.plotly_chart(radar_chart)
     with col2:
         
-        add_predictions(input_data)
+        add_predictions(input_data,model,scaler)
 
 if __name__== '__main__':
     
